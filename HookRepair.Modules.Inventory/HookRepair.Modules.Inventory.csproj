@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Application\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.30" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HookRepair.Modules.Auth\HookRepair.Modules.Auth.csproj" />
+    <ProjectReference Include="..\HookRepair.Modules.Catalogs\HookRepair.Modules.Catalogs.csproj" />
+    <ProjectReference Include="..\HookRepair.Modules.Crm\HookRepair.Modules.Crm.csproj" />
+  </ItemGroup>
+
+</Project>
