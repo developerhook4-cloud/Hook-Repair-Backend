@@ -22,6 +22,7 @@ using HookRepair.Modules.Crm.Infrastructure.Clients;
 using HookRepair.Modules.Crm.Infrastructure;
 using HookRepair.Modules.Crm.Infrastructure.Suppliers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
@@ -68,6 +69,15 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddProblemDetails();
+
+// Railway (y cualquier proxy inverso) termina el HTTPS y reenvia HTTP a la app.
+// Esto hace que ASP.NET use el esquema y la IP originales del cliente.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // db contexts para cada modulo aqi
 builder.Services.AddDbContext<AuthDbContext>(options => options
@@ -145,9 +155,20 @@ builder.Services.AddScoped<AuthSeeder>();
 
 var app = builder.Build();
 
+// Debe ser el primer middleware del pipeline
+app.UseForwardedHeaders();
+
 using (var scope = app.Services.CreateScope())
 {
-    var seeder = scope.ServiceProvider.GetRequiredService<AuthSeeder>();
+    var sp = scope.ServiceProvider;
+
+    // Crea/actualiza las tablas de cada modulo antes de sembrar datos
+    await sp.GetRequiredService<AuthDbContext>().Database.MigrateAsync();
+    await sp.GetRequiredService<CatalogDbContext>().Database.MigrateAsync();
+    await sp.GetRequiredService<CrmDbContext>().Database.MigrateAsync();
+    await sp.GetRequiredService<InventoryDbContext>().Database.MigrateAsync();
+
+    var seeder = sp.GetRequiredService<AuthSeeder>();
     await seeder.SeedAsync();
 }
 
