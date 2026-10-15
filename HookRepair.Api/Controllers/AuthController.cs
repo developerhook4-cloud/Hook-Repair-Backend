@@ -59,7 +59,7 @@ public sealed class AuthController : ControllerBase
         await _authService.LogoutAsync(Request.Cookies[_options.RefreshCookieName], cancellationToken);
         Response.Cookies.Delete(_options.RefreshCookieName, CookieOptions());
 
-        return Ok(new { mensaje = "Sesión cerrada correctamente." });
+        return Ok(new { mensaje = "SesiÃ³n cerrada correctamente." });
     }
 
     private void SetSessionCookies(string refreshToken, DateTime expiresAt)
@@ -70,12 +70,18 @@ public sealed class AuthController : ControllerBase
     private static AuthResponse ToFrontendResponse(AuthSessionResult session) =>
      new(session.AccessToken, session.User);
 
-    private CookieOptions CookieOptions(DateTime? expiresAt = null, bool httpOnly = true) => new()
+    private CookieOptions CookieOptions(DateTime? expiresAt = null, bool httpOnly = true)
     {
-        HttpOnly = httpOnly,
-        Secure = !_environment.IsDevelopment() || Request.IsHttps,
-        SameSite = SameSiteMode.Strict,
-        Expires = expiresAt,
-        Path = "/api/auth"
-    };
+        var secure = !_environment.IsDevelopment() || Request.IsHttps;
+        return new CookieOptions
+        {
+            HttpOnly = httpOnly,
+            Secure = secure,
+            // Frontend y backend viven en dominios distintos: la cookie debe poder cruzar sitios.
+            // SameSite=None exige Secure; en desarrollo sin HTTPS se usa Lax.
+            SameSite = secure ? SameSiteMode.None : SameSiteMode.Lax,
+            Expires = expiresAt,
+            Path = "/api/auth"
+        };
+    }
 }
